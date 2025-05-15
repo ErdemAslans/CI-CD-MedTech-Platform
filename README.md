@@ -195,15 +195,6 @@ Model, şu sınıfları tespit edebilir:
 3. **Sonuçları İnceleme**: Detaylı raporlar ve Grad-CAM ısı haritalarını inceleyin
 4. **Rapor Paylaşımı**: Sonuçları diğer uzmanlarla paylaşın veya hasta kayıtlarına ekleyin
 
-## 🔒 Güvenlik
-
-LungVision AI, hasta verilerinin gizliliğini ve güvenliğini sağlamak için çeşitli önlemleri uygular:
-
-- HIPAA uyumlu veri depolama ve işleme
-- End-to-end şifreleme
-- Rol tabanlı erişim kontrolleri
-- Kapsamlı loglama ve izleme
-- Güvenli Docker konteynerizasyonu
 
 ## 🧪 Test Etme
 
@@ -223,9 +214,7 @@ coverage report
 
 Bu proje MIT Lisansı ile lisanslanmıştır. Daha fazla bilgi için [LICENSE](LICENSE) dosyasına bakın.
 
-## 👥 Katkıda Bulunma
-
-Katkılarınızı memnuniyetle karşılıyoruz! Aşağıdaki adımları izleyin:
+## 👥   Kullanım
 
 1. Bu repo'yu forklayın
 2. Yeni bir dal oluşturun (`git checkout -b feature/amazing-feature`)
@@ -235,7 +224,7 @@ Katkılarınızı memnuniyetle karşılıyoruz! Aşağıdaki adımları izleyin:
 
 ## 📞 İletişim
 
-Proje Sahibi: Erdem Aslan - erdemaslanss@gmail.com
+Proje Sahibi: Erdem Aslan - Erdem-Aslan1905@hotmail.com
 
 Proje Linki: [https://github.com/ErdemAslans/lungvision-ai-with-DevOPS](https://github.com/ErdemAslans/lungvision-ai-with-DevOPS)
 
