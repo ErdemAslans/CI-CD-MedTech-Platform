@@ -31,7 +31,7 @@ LungVision AI, patologları ve bilim insanlarını güçlü derin öğrenme yapa
 </div>
 
 <div align="center">
-  <img src="https://github.com/ErdemAslans/lungvision-ai-with-DevOPS/raw/main/media/samples/20250515_133124_133a717b.jpeg" alt="LungVision AI Grad-CAM Görselleştirmesi" width="400"/>
+  <img src="https://github.com/ErdemAslans/lungvision-ai-with-DevOPS/raw/main/media/gradcam/gradcam_6825b355ade5597fec5e3ff8_20250515_122752.jpg" alt="LungVision AI Grad-CAM Görselleştirmesi" width="400"/>
   <p><em>Grad-CAM ısı haritası ile modelin odaklandığı bölgeler</em></p>
 </div>
 
