@@ -1,0 +1,27 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LungVision AI{% endblock %}</title>
+    
+    <!-- CDN'i kaldırıp bu satırı ekleyin -->
+    {% tailwind_css %}
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    
+    <!-- Tailwind config JavaScript kısmını kaldırabilirsiniz -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gradient-to-br from-light to-gray-100 min-h-screen flex flex-col">
+    {% include 'components/navbar.html' %}
+   
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+   
+    {% include 'components/footer.html' %}
+   
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

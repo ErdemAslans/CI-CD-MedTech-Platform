@@ -1,0 +1,76 @@
+<!-- templates/cases/confirm_delete.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Vakayı Sil - LungVision AI{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-md mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Vakayı Sil</h1>
+            <a href="{% url 'prediction:case_detail' case.id %}" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition flex items-center text-sm">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Geri Dön
+            </a>
+        </div>
+        
+        <div class="bg-dark rounded-lg shadow-md">
+            <div class="p-6">
+                {% if error %}
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+                    {{ error }}
+                </div>
+                {% endif %}
+                
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">Dikkat! Bu işlem geri alınamaz.</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <p>Bu vakayı silmek, ilişkili tüm görüntüleri ve tahminleri de silecektir.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Vaka Bilgileri</h2>
+                    <div class="space-y-2">
+                        <div class="grid grid-cols-2 border-b border-gray-100 pb-2">
+                            <span class="font-medium text-gray-600">Hasta ID:</span>
+                            <span class="text-gray-900">{{ case.patient_id }}</span>
+                        </div>
+                        <div class="grid grid-cols-2 border-b border-gray-100 pb-2">
+                            <span class="font-medium text-gray-600">Oluşturma Tarihi:</span>
+                            <span class="text-gray-900">{{ case.created_at|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        <div class="grid grid-cols-2 border-b border-gray-100 pb-2">
+                            <span class="font-medium text-gray-600">Doktor:</span>
+                            <span class="text-gray-900">{{ case.doctor_name }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <div class="flex justify-end space-x-3">
+                        <a href="{% url 'prediction:case_detail' case.id %}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition">
+                            İptal
+                        </a>
+                        <button type="submit" class="px-4 py-2 bg-red-600 text-dark rounded-md hover:bg-red-700 transition">
+                            Vakayı Sil
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

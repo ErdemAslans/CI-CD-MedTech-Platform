@@ -1,0 +1,106 @@
+<!-- templates/cases/image_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Vaka Görüntüleri - LungVision AI{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center">
+            <a href="{% url 'prediction:case_detail' case.id %}" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition flex items-center text-sm mr-4">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Vakaya Dön
+            </a>
+            <h1 class="text-2xl font-bold text-gray-800">Görüntüler: {{ case.patient_id }}</h1>
+        </div>
+        
+        <a href="{% url 'prediction:image_upload' case.id %}" class="px-4 py-2 bg-primary text-dark rounded-md hover:bg-purple-700 transition flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Görüntü Ekle
+        </a>
+    </div>
+    
+    <div class="bg-dark rounded-lg shadow-md">
+        <div class="p-6">
+            {% if images %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {% for image in images %}
+                <div class="border rounded-lg overflow-hidden hover:shadow-md transition group">
+                    <a href="{% url 'prediction:image_detail' image.id %}" class="block">
+                        <div class="relative">
+                            <img src="{{ MEDIA_URL }}{{ image.image_path }}" alt="Görüntü" class="w-full h-48 object-cover">
+                            <div class="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span class="text-dark font-medium px-3 py-1 rounded-full bg-primary bg-opacity-90">Görüntüle</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-medium text-gray-900 truncate">
+                                        {{ image.description|default:"Görüntü" }}
+                                    </h3>
+                                    <p class="text-sm text-gray-500">{{ image.uploaded_at|date:"d.m.Y H:i" }}</p>
+                                </div>
+                                {% if image.last_prediction %}
+                                <span class="px-2 py-1 rounded-full text-xs font-medium 
+                                      {% if image.last_prediction.confidence > 0.9 %}bg-green-100 text-green-800
+                                      {% elif image.last_prediction.confidence > 0.7 %}bg-blue-100 text-blue-800
+                                      {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ image.last_prediction.confidence|floatformat:2 }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if image.last_prediction %}
+                            <div class="mt-3 pt-3 border-t border-gray-100">
+                                <div class="flex items-center">
+                                    <div class="w-2 h-2 rounded-full 
+                                         {% if image.last_prediction.predicted_class == 'lung_aca' %}bg-red-500
+                                         {% elif image.last_prediction.predicted_class == 'lung_scc' %}bg-amber-500
+                                         {% else %}bg-green-500{% endif %} mr-2"></div>
+                                    <span class="text-sm text-gray-700">{{ image.last_prediction.predicted_class_display }}</span>
+                                </div>
+                            </div>
+                            {% else %}
+                                {% if image and image.id %}
+                                    <a href="{% url 'prediction:predict_image' image.id %}" class="px-4 py-2 bg-primary text-dark rounded-md hover:bg-primary-dark transition flex items-center justify-center w-full">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                        </svg>
+                                        Tahmin Yap
+                                    </a>
+                                {% else %}
+                                    <div class="px-4 py-2 bg-gray-300 text-gray-500 rounded-md flex items-center justify-center w-full">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Görüntü Mevcut Değil
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="py-8 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <p class="mt-1 text-sm text-gray-500">Bu vakaya henüz bir görüntü eklenmemiş.</p>
+                <div class="mt-6">
+                    <a href="{% url 'prediction:image_upload' case.id %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-dark bg-primary hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                        Görüntü Yükle
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

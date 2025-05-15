@@ -1,0 +1,204 @@
+<!-- templates/cases/report.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Vaka Raporu - LungVision AI{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-6 flex justify-between items-center">
+        <div class="flex items-center">
+            <a href="{% url 'prediction:case_detail' case.id %}" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition flex items-center text-sm mr-4">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Vakaya Dön
+            </a>
+            <h1 class="text-2xl font-bold text-gray-800">Vaka Raporu: {{ case.patient_id }}</h1>
+        </div>
+        
+        <div class="flex space-x-2">
+            <div class="relative inline-block text-left">
+                <button type="button" id="format-menu-button" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    İndir
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div id="format-menu" class="hidden origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-dark ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                    <div class="py-1">
+                        <a href="{% url 'prediction:case_report' case.id %}?format=pdf" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            PDF Olarak İndir
+                        </a>
+                        <a href="{% url 'prediction:case_report' case.id %}?format=csv" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            CSV Olarak İndir
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <button onclick="window.print()" class="px-4 py-2 bg-primary text-dark rounded-md hover:bg-purple-700 transition flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+                Yazdır
+            </button>
+        </div>
+    </div>
+    
+    <div class="bg-dark rounded-lg shadow-md" id="report-content">
+        <!-- Rapor Başlığı -->
+        <div class="p-6 border-b">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">LungVision AI Vaka Raporu</h2>
+                    <p class="text-gray-600">{{ report.timestamp }}</p>
+                </div>
+                <div class="text-right">
+                    <h3 class="font-semibold">Hasta ID: {{ case.patient_id }}</h3>
+                    <p class="text-gray-600">Doktor: {{ case.doctor_name }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rapor İçeriği -->
+        <div class="p-6">
+            <!-- Vaka Özeti -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Vaka Özeti</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <dl class="space-y-2">
+                            <div class="grid grid-cols-2 gap-4">
+                                <dt class="text-sm font-medium text-gray-600">Hasta ID:</dt>
+                                <dd class="text-sm text-gray-900">{{ report.case.patient_id }}</dd>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <dt class="text-sm font-medium text-gray-600">Durum:</dt>
+                                <dd class="text-sm text-gray-900">{{ report.case.status }}</dd>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <dt class="text-sm font-medium text-gray-600">Oluşturma Tarihi:</dt>
+                                <dd class="text-sm text-gray-900">{{ report.case.created_at }}</dd>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <dt class="text-sm font-medium text-gray-600">Doktor:</dt>
+                                <dd class="text-sm text-gray-900">{{ report.case.doctor_name }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <dl class="space-y-2">
+                            <div class="grid grid-cols-2 gap-4">
+                                <dt class="text-sm font-medium text-gray-600">Toplam Görüntü:</dt>
+                                <dd class="text-sm text-gray-900">{{ report.images|length }}</dd>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <dt class="text-sm font-medium text-gray-600">Toplam Tahmin:</dt>
+                                <dd class="text-sm text-gray-900">{{ report.predictions|length }}</dd>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <dt class="text-sm font-medium text-gray-600">Ön Tanı:</dt>
+                                <dd class="text-sm text-gray-900">
+                                    {% if report.predictions %}
+                                    {% with dominant_class=report.predictions.0.predicted_class_display %}
+                                    {{ dominant_class }}
+                                    {% endwith %}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </dd>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <dt class="text-sm font-medium text-gray-600">Notlar:</dt>
+                                <dd class="text-sm text-gray-900">{{ report.case.notes|default:"-" }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tahmin Sonuçları -->
+            {% if report.predictions %}
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Tahmin Sonuçları</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Görüntü</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sınıf</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Güven</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-dark divide-y divide-gray-200">
+                            {% for prediction in report.predictions %}
+                            <tr>
+                                <td class="px-6 py-4 darkspace-nowrap text-sm text-gray-900">{{ prediction.image_uuid }}</td>
+                                <td class="px-6 py-4 darkspace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                          {% if prediction.predicted_class == 'lung_aca' %}bg-red-100 text-red-800
+                                          {% elif prediction.predicted_class == 'lung_scc' %}bg-amber-100 text-amber-800
+                                          {% else %}bg-green-100 text-green-800{% endif %}">
+                                        {{ prediction.predicted_class_display }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 darkspace-nowrap text-sm text-gray-900">{{ prediction.confidence|floatformat:2 }}</td>
+                                <td class="px-6 py-4 darkspace-nowrap text-sm text-gray-900">{{ prediction.model_version }}</td>
+                                <td class="px-6 py-4 darkspace-nowrap text-sm text-gray-500">{{ prediction.created_at }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Görüntüler -->
+            {% if report.images %}
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Görüntüler</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {% for image in report.images %}
+                    <div class="bg-gray-50 rounded-lg overflow-hidden">
+                        <img src="{{ MEDIA_URL }}{{ image.image_path }}" alt="Görüntü" class="w-full h-32 object-cover">
+                        <div class="p-2">
+                            <p class="text-xs text-gray-600">{{ image.uuid }}</p>
+                            <p class="text-xs text-gray-500">{{ image.uploaded_at }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Rapor Alt Bilgisi -->
+        <div class="p-6 border-t bg-gray-50 text-center text-xs text-gray-500">
+            <p>Bu rapor LungVision AI tarafından oluşturulmuştur. {{ report.timestamp }}</p>
+            <p>Tanı amaçlı kullanılamaz, klinik değerlendirme gereklidir.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const formatMenuButton = document.getElementById('format-menu-button');
+        const formatMenu = document.getElementById('format-menu');
+        
+        formatMenuButton.addEventListener('click', function() {
+            formatMenu.classList.toggle('hidden');
+        });
+        
+        // Menü dışına tıklandığında menüyü kapat
+        document.addEventListener('click', function(event) {
+            if (!formatMenuButton.contains(event.target) && !formatMenu.contains(event.target)) {
+                formatMenu.classList.add('hidden');
+            }
+        });
+    });
+</script>
+{% endblock %}

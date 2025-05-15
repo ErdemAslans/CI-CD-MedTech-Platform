@@ -1,0 +1,69 @@
+<!-- templates/cases/form.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ case.id|yesno:"Vakayı Düzenle,Yeni Vaka" }} - LungVision AI{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">{{ case.id|yesno:"Vakayı Düzenle,Yeni Vaka" }}</h1>
+            <a href="{% url 'prediction:case_list' %}" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition flex items-center text-sm">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Geri Dön
+            </a>
+        </div>
+        
+        <div class="bg-dark rounded-lg shadow-md">
+            <div class="p-6">
+                {% if error %}
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+                    {{ error }}
+                </div>
+                {% endif %}
+                
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <div class="space-y-6">
+                        <div>
+                            <label for="patient_id" class="block text-sm font-medium text-gray-700 mb-1">Hasta ID <span class="text-red-500">*</span></label>
+                            <input type="text" id="patient_id" name="patient_id" value="{{ case.patient_id|default:'' }}" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="Hasta Kimlik Numarası">
+                        </div>
+                        
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Durum</label>
+                            <select id="status" name="status" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="pending" {% if case.status == 'pending' %}selected{% endif %}>Beklemede</option>
+                                <option value="in_progress" {% if case.status == 'in_progress' %}selected{% endif %}>İşlemde</option>
+                                <option value="completed" {% if case.status == 'completed' %}selected{% endif %}>Tamamlandı</option>
+                                <option value="archived" {% if case.status == 'archived' %}selected{% endif %}>Arşivlendi</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notlar</label>
+                            <textarea id="notes" name="notes" rows="4"
+                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                     placeholder="Vaka ile ilgili not ekleyin...">{{ case.notes|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <a href="{% url 'prediction:case_list' %}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition">
+                                İptal
+                            </a>
+                            <button type="submit" class="px-4 py-2 bg-primary text-dark rounded-md hover:bg-purple-700 transition">
+                                {{ case.id|yesno:"Güncelle,Oluştur" }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

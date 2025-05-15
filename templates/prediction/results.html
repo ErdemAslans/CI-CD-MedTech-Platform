@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+
+{% block title %}Analiz Sonuçları - LungVision AI{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Analiz Sonuçları</h1>
+        <p class="text-gray-600">
+            Yapay zeka modelinin histopatolojik görüntü analiz sonuçları.
+        </p>
+    </div>
+
+    <!-- Sonuç Özeti Kartı -->
+    <div class="bg-dark rounded-xl shadow-lg overflow-hidden mb-8">
+        <div class="bg-gradient-to-r from-primary to-indigo-700 p-6 text-dark">
+            <h2 class="text-xl font-semibold">Tahmin Sonucu</h2>
+            <p class="text-sm opacity-80">Yapay zeka modelinin teşhis önerisi</p>
+        </div>
+        
+        <div class="p-6">
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- Görüntü Önizleme -->
+                <div class="md:w-1/3">
+                    <div class="bg-gray-100 rounded-lg p-2 aspect-square flex items-center justify-center overflow-hidden">
+                        {% if image.image_path %}
+                        <img src="{{ MEDIA_URL }}{{ image.image_path }}" alt="Histopatolojik görüntü" class="max-w-full max-h-full object-contain">
+                        {% else %}
+                        <div class="text-gray-400 text-center">
+                            <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <p>Görüntü bulunamadı</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tahmin Detayları -->
+                <div class="md:w-2/3">
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-bold 
+                            {% if prediction.predicted_class == 'lung_aca' %}text-red-600 
+                            {% elif prediction.predicted_class == 'lung_scc' %}text-amber-600 
+                            {% else %}text-green-600{% endif %}">
+                            {{ prediction.predicted_class_display }}
+                        </h3>
+                        <div class="mt-2 flex items-center">
+                            <div class="text-gray-700 font-medium">Güven Oranı:</div>
+                            <div class="ml-2 w-full max-w-md bg-gray-200 rounded-full h-2.5">
+                                <div class="h-2.5 rounded-full 
+                                    {% if prediction.confidence > 0.8 %}bg-green-600 
+                                    {% elif prediction.confidence > 0.5 %}bg-amber-500 
+                                    {% else %}bg-red-500{% endif %}" 
+                                    style="width: {{ prediction.confidence|floatformat:'2' }}%">
+                                </div>
+                            </div>
+                            <div class="ml-2 font-bold">{{ prediction.confidence|floatformat:'2' }}%</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tahmin Zamanı</label>
+                            <p class="text-gray-900 font-medium">{{ prediction.prediction_time|default:"" }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Model Versiyonu</label>
+                            <p class="text-gray-900 font-medium">{{ prediction.model_version|default:"v1.0" }}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Tüm Sınıfların Olasılıkları</h4>
+                        <div class="space-y-2">
+                            {% for class_name, prob in prediction.probabilities.items %}
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm 
+                                        {% if class_name == 'lung_aca' %}text-red-700 
+                                        {% elif class_name == 'lung_scc' %}text-amber-700 
+                                        {% elif class_name == 'lung_n' %}text-green-700
+                                        {% else %}text-gray-700{% endif %} font-medium">
+                                        {% if class_name == 'lung_aca' %}Akciğer Adenokarsinomu 
+                                        {% elif class_name == 'lung_scc' %}Akciğer Skuamöz Hücreli Karsinomu 
+                                        {% elif class_name == 'lung_n' %}Normal Akciğer Dokusu
+                                        {% else %}{{ class_name }}{% endif %}
+                                    </span>
+                                    <span class="text-sm text-gray-700 font-medium">{{ prob|floatformat:2 }}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                    <div class="h-1.5 rounded-full 
+                                        {% if class_name == 'lung_aca' %}bg-red-500 
+                                        {% elif class_name == 'lung_scc' %}bg-amber-500 
+                                        {% elif class_name == 'lung_n' %}bg-green-500
+                                        {% else %}bg-blue-500{% endif %}" 
+                                        style="width: {{ prob|floatformat:4 }}%">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grad-CAM Görselleştirme -->
+    {% if prediction.gradcam_path %}
+    <div class="bg-dark rounded-xl shadow-lg overflow-hidden mb-8">
+        <div class="p-6 border-b">
+            <h2 class="text-xl font-semibold text-gray-800">Grad-CAM Görselleştirmesi</h2>
+            <p class="text-sm text-gray-600 mt-1">
+                Yapay zeka modelinin görüntünün hangi bölgelerine odaklandığını gösteren ısı haritası.
+            </p>
+        </div>
+        <div class="p-6">
+            <div class="flex flex-col md:flex-row gap-8 items-center">
+                <div class="md:w-1/2">
+                    <div class="bg-gray-100 rounded-lg p-2 flex items-center justify-center overflow-hidden">
+                        <img src="{{ MEDIA_URL }}{{ image.image_path }}" alt="Orijinal Görüntü" class="max-w-full max-h-80 object-contain">
+                    </div>
+                    <p class="text-center mt-2 font-medium text-gray-700">Orijinal Görüntü</p>
+                </div>
+                <div class="md:w-1/2">
+                    <div class="bg-gray-100 rounded-lg p-2 flex items-center justify-center overflow-hidden">
+                        <img src="{{ MEDIA_URL }}{{ prediction.gradcam_path }}" alt="Grad-CAM Görselleştirmesi" class="max-w-full max-h-80 object-contain">
+                    </div>
+                    <p class="text-center mt-2 font-medium text-gray-700">Grad-CAM Isı Haritası</p>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-gray-50 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-2">Grad-CAM Nedir?</h3>
+                <p class="text-gray-700 text-sm">
+                    Gradient-weighted Class Activation Mapping (Grad-CAM), derin öğrenme modelinin kararını verirken 
+                    hangi bölgelere odaklandığını görselleştiren bir tekniktir. Kırmızı-sarı alanlar modelin yüksek 
+                    aktivasyon gösterdiği, yani tanı için önemli olarak değerlendirdiği bölgeleri gösterir. Bu görselleştirme, 
+                    modelin kararlarını yorumlamaya ve açıklanabilir yapay zeka prensiplerini uygulamaya yardımcı olur.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Patolojik Değerlendirme -->
+    <div class="bg-dark rounded-xl shadow-lg overflow-hidden mb-8">
+        <div class="p-6 border-b">
+            <h2 class="text-xl font-semibold text-gray-800">Patolojik Değerlendirme</h2>
+        </div>
+        <div class="p-6">
+            {% if prediction.predicted_class == 'lung_aca' %}
+            <h3 class="text-lg font-semibold text-red-600 mb-3">Akciğer Adenokarsinomu (ACA)</h3>
+            <p class="text-gray-700 mb-4">
+                Görüntü analizinde <strong>akciğer adenokarsinomu</strong> belirtileri tespit edilmiştir. Adenokarsinom, 
+                akciğer kanserinin en yaygın türüdür ve genellikle akciğerlerin dış kısımlarında, alveol hücrelerinden 
+                gelişir. Belirgin glandüler yapı oluşumu, hücresel atipi ve nükleer anomaliler gözlemlenebilir.
+            </p>
+            <p class="text-gray-700 mb-4">
+                Tipik histolojik özellikler:
+            </p>
+            <ul class="list-disc ml-6 mb-4 text-gray-700">
+                <li>Beze benzeri yapılar (glandüler formasyonlar)</li>
+                <li>Pleomorfik nükleuslar ve belirgin nükleolus</li>
+                <li>Sitoplazma içinde müsin varlığı</li>
+                <li>Lepidik, asiner, papiller veya solid büyüme düzenleri</li>
+            </ul>
+            {% elif prediction.predicted_class == 'lung_scc' %}
+            <h3 class="text-lg font-semibold text-amber-600 mb-3">Akciğer Skuamöz Hücreli Karsinomu (SCC)</h3>
+            <p class="text-gray-700 mb-4">
+                Görüntü analizinde <strong>akciğer skuamöz hücreli karsinomu</strong> belirtileri tespit edilmiştir. Bu tür, 
+                genellikle akciğerlerin ana bronşlarında, sigara içimi ile güçlü bir şekilde ilişkili olarak ortaya çıkar. 
+                Keratinizasyon, hücre içi köprüler ve çok katlı epitel hücrelerine benzer düzenlemeler görülebilir.
+            </p>
+            <p class="text-gray-700 mb-4">
+                Tipik histolojik özellikler:
+            </p>
+            <ul class="list-disc ml-6 mb-4 text-gray-700">
+                <li>Keratinizasyon ve/veya hücre içi köprüler</li>
+                <li>Tabaka şeklinde düzenlenmiş epitelyum benzeri yapı</li>
+                <li>Belirgin hücre sınırları ve geniş eozinofilik sitoplazma</li>
+                <li>Merkezi yerleşimli nükleus ve belirgin nükleolus</li>
+            </ul>
+            {% else %}
+            <h3 class="text-lg font-semibold text-green-600 mb-3">Normal Akciğer Dokusu</h3>
+            <p class="text-gray-700 mb-4">
+                Görüntü analizi sonucunda <strong>normal akciğer dokusu</strong> olarak değerlendirilmiştir. Görüntüde 
+                belirgin malignite bulgusu tespit edilmemiştir. Normal akciğer dokusunda sağlıklı alveolar yapılar, 
+                normal bronşiyal epiteller ve düzenli bağ dokusu gözlemlenir.
+            </p>
+            <p class="text-gray-700 mb-4">
+                Tipik normal doku özellikleri:
+            </p>
+            <ul class="list-disc ml-6 mb-4 text-gray-700">
+                <li>Düzenli alveol yapıları</li>
+                <li>Normal bronşiyal ve bronşiyolar epitel</li>
+                <li>Düzenli bağ dokusu ve düz kas yapıları</li>
+                <li>Hücre atipisinin olmaması</li>
+            </ul>
+            {% endif %}
+
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                            <strong>Not:</strong> Bu değerlendirme, yapay zeka modelinin analizi sonucunda oluşturulmuştur. 
+                            Nihai tanı için mutlaka patolog değerlendirmesi gereklidir. Bu sonuçlar yalnızca karar destek 
+                            amacıyla kullanılmalıdır.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aksiyon Butonları -->
+    <div class="flex flex-col md:flex-row gap-4">
+        <a href="{% url 'prediction:visualize' image.id %}" class="bg-primary hover:bg-primary-dark text-dark font-medium py-2 px-4 rounded-lg flex items-center justify-center">
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+            Grad-CAM Görselleştirmesini İncele
+        </a>
+        
+        {% if case_id %}
+        <a href="{% url 'prediction:case_detail' case_id %}" class="bg-dark border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+            </svg>
+            Vaka Detaylarına Dön
+        </a>
+        {% endif %}
+        
+        <a href="{% url 'prediction:predict_image' image.id %}" class="bg-dark border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Yeniden Analiz Et
+        </a>
+    </div>
+</div>
+{% endblock %}

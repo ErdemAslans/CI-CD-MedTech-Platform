@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+
+{% block title %}Görüntü Yükleme - LungVision AI{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Histopatolojik Görüntü Yükleme</h1>
+        <p class="text-gray-600">
+            Analiz edilecek histopatolojik görüntüleri yükleyin.
+        </p>
+    </div>
+
+    {% if error %}
+    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6">
+        <p>{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Vaka Bilgileri -->
+        <div class="md:col-span-1">
+            <div class="bg-dark rounded-xl shadow-lg p-6 sticky top-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Vaka Bilgileri</h2>
+                
+                {% if case %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Vaka ID</label>
+                        <p class="text-gray-900 font-medium">{{ case.id }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Hasta ID</label>
+                        <p class="text-gray-900 font-medium">{{ case.patient_id }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Durum</label>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if case.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif case.status == 'in_progress' %}bg-blue-100 text-blue-800
+                            {% elif case.status == 'completed' %}bg-green-100 text-green-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {% if case.status == 'pending' %}Beklemede
+                            {% elif case.status == 'in_progress' %}İşlemde
+                            {% elif case.status == 'completed' %}Tamamlandı
+                            {% elif case.status == 'archived' %}Arşivlenmiş
+                            {% else %}{{ case.status }}{% endif %}
+                        </span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Doktor</label>
+                        <p class="text-gray-900">{{ case.doctor_name|default:"Belirtilmemiş" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Oluşturulma Tarihi</label>
+                        <p class="text-gray-900">{{ case.created_at|date:"d.m.Y H:i" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notlar</label>
+                        <p class="text-gray-900">{{ case.notes|default:"-" }}</p>
+                    </div>
+                    
+                    <div class="pt-4 border-t">
+                        <a href="{% url 'prediction:case_detail' case.id %}" class="text-primary hover:text-primary-dark font-medium text-sm flex items-center">
+                            <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Vaka Detaylarına Dön
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                Seçili bir vaka bulunmuyor. Görüntüyü yüklemek için önce vaka seçmelisiniz.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{% url 'prediction:case_list' %}" class="text-primary hover:text-primary-dark font-medium text-sm flex items-center">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        Vakaları Görüntüle
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Yükleme Formu -->
+        <div class="md:col-span-2">
+            <div class="bg-dark rounded-xl shadow-lg overflow-hidden">
+                <div class="p-6 border-b">
+                    <h2 class="text-xl font-semibold text-gray-800">Görüntü Yükle</h2>
+                    <p class="text-sm text-gray-600 mt-1">
+                        Desteklenen formatlar: JPEG, PNG (max: 10MB)
+                    </p>
+                </div>
+                
+                <div class="p-6">
+                    <form id="upload-form" method="post" enctype="multipart/form-data" action="">
+                        {% csrf_token %}
+                        
+                        {% if not case %}
+                        <div class="mb-4">
+                            <label for="case_id" class="block text-sm font-medium text-gray-700 mb-1">Vaka Seçin</label>
+                            <select id="case_id" name="case_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary rounded-md" required>
+                                <option value="">Vaka Seçin</option>
+                                <!-- Burada backend'den gelen vaka listesi olacak -->
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-4">
+                            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
+                            <textarea id="description" name="description" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50" placeholder="Görüntü hakkında açıklama ekleyin (isteğe bağlı)"></textarea>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Görüntü</label>
+                            <div id="dropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="file" name="image" id="image-input" class="hidden" accept="image/jpeg, image/png" required>
+                                
+                                <div id="upload-placeholder">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                    <p class="mt-2 text-sm text-gray-600">
+                                        <span class="font-medium text-primary">Dosya seçmek için tıklayın</span> veya sürükleyip bırakın
+                                    </p>
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        JPEG, PNG formatında histopatolojik görüntü (max 10MB)
+                                    </p>
+                                </div>
+                                
+                                <div id="preview-container" class="hidden">
+                                    <div class="flex items-center justify-center">
+                                        <img id="image-preview" src="#" alt="Görüntü önizleme" class="max-h-64 max-w-full">
+                                    </div>
+                                    <p id="file-name" class="mt-2 text-sm text-gray-600 font-medium"></p>
+                                    <button type="button" id="remove-image" class="mt-2 text-sm text-red-600 hover:text-red-800">
+                                        Görüntüyü Kaldır
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div id="upload-status" class="text-sm text-gray-500 hidden">
+                                <div class="flex items-center">
+                                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Yükleniyor...</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                {% if case %}
+                                <a href="{% url 'prediction:case_detail' case.id %}" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-dark hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                                    İptal
+                                </a>
+                                {% else %}
+                                <a href="{% url 'prediction:case_list' %}" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-dark hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                                    İptal
+                                </a>
+                                {% endif %}
+                                <button type="submit" id="submit-btn" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-dark bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                                    Yükle
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropzone = document.getElementById('dropzone');
+    const imageInput = document.getElementById('image-input');
+    const previewContainer = document.getElementById('preview-container');
+    const uploadPlaceholder = document.getElementById('upload-placeholder');
+    const imagePreview = document.getElementById('image-preview');
+    const fileName = document.getElementById('file-name');
+    const removeImageBtn = document.getElementById('remove-image');
+    const uploadForm = document.getElementById('upload-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const uploadStatus = document.getElementById('upload-status');
+
+    // Dosya seçme işlemi
+    dropzone.addEventListener('click', function() {
+        imageInput.click();
+    });
+
+    // Sürükleyip bırakma işlemi
+    dropzone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropzone.classList.add('border-primary');
+    });
+
+    dropzone.addEventListener('dragleave', function() {
+        dropzone.classList.remove('border-primary');
+    });
+
+    dropzone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropzone.classList.remove('border-primary');
+        
+        if (e.dataTransfer.files.length) {
+            imageInput.files = e.dataTransfer.files;
+            updatePreview();
+        }
+    });
+
+    // Dosya değiştiğinde önizleme
+    imageInput.addEventListener('change', updatePreview);
+
+    // Görüntü kaldırma
+    removeImageBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        imageInput.value = '';
+        previewContainer.classList.add('hidden');
+        uploadPlaceholder.classList.remove('hidden');
+    });
+
+    // Form gönderimi
+    uploadForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (!imageInput.files.length) {
+            alert('Lütfen bir görüntü seçin.');
+            return;
+        }
+        
+        // AJAX ile form gönderimi
+        submitBtn.disabled = true;
+        uploadStatus.classList.remove('hidden');
+        
+        const formData = new FormData(uploadForm);
+        
+        fetch('', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Başarılı olursa görüntü detayına yönlendir
+                window.location.href = `/cases/images/${data.image_id}/`;
+            } else {
+                // Hata mesajı göster
+                alert(data.message || 'Görüntü yüklenirken bir hata oluştu.');
+                submitBtn.disabled = false;
+                uploadStatus.classList.add('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Görüntü yüklenirken bir hata oluştu.');
+            submitBtn.disabled = false;
+            uploadStatus.classList.add('hidden');
+        });
+    });
+
+    // Önizleme güncelleme fonksiyonu
+    function updatePreview() {
+        if (imageInput.files && imageInput.files[0]) {
+            const file = imageInput.files[0];
+            
+            // Dosya boyut kontrolü (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Dosya boyutu 10MB\'dan küçük olmalıdır.');
+                imageInput.value = '';
+                return;
+            }
+            
+            // Dosya türü kontrolü
+            if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
+                alert('Sadece JPEG ve PNG formatları desteklenmektedir.');
+                imageInput.value = '';
+                return;
+            }
+            
+            // Önizleme göster
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                fileName.textContent = file.name;
+                uploadPlaceholder.classList.add('hidden');
+                previewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+});
+</script>
+{% endblock %}

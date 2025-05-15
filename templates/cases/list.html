@@ -1,0 +1,271 @@
+<!-- templates/cases/list.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Vakalar - LungVision AI{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-2xl font-bold text-gray-800">Vakalar</h1>
+        
+        <a href="{% url 'prediction:case_create' %}" class="px-4 py-2 bg-primary text-dark rounded-md hover:bg-purple-700 transition-colors">
+            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Yeni Vaka
+        </a>
+    </div>
+    
+    <!-- Filtreler -->
+    <div class="bg-dark rounded-lg shadow p-4 mb-6">
+        <div class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Durum</label>
+                <select id="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <option value="">Tümü</option>
+                    <option value="pending">Beklemede</option>
+                    <option value="in_progress">İşlemde</option>
+                    <option value="completed">Tamamlandı</option>
+                    <option value="archived">Arşivlendi</option>
+                </select>
+            </div>
+            
+            <div class="flex-1 min-w-[200px]">
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Ara</label>
+                <input type="text" id="search" placeholder="Hasta ID veya Doktor adı..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+            </div>
+            
+            <div class="flex-1 min-w-[200px]">
+                <label for="sort" class="block text-sm font-medium text-gray-700 mb-1">Sırala</label>
+                <select id="sort" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <option value="created_at_desc">Oluşturma tarihi (En yeni)</option>
+                    <option value="created_at_asc">Oluşturma tarihi (En eski)</option>
+                    <option value="patient_id_asc">Hasta ID (A-Z)</option>
+                    <option value="patient_id_desc">Hasta ID (Z-A)</option>
+                </select>
+            </div>
+            
+            <div class="flex items-end">
+                <button id="applyFilters" class="px-4 py-2 bg-gray-800 text-dark rounded-md hover:bg-gray-700 transition-colors">
+                    Filtrele
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Vaka Listesi -->
+    <div class="bg-dark rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Hasta ID
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Durum
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Doktor
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Oluşturma Tarihi
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Görüntüler
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Son Tahmin
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        İşlemler
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-dark divide-y divide-gray-200">
+                {% for case in cases %}
+                <tr>
+                    <td class="px-6 py-4 darkspace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">
+                            {{ case.patient_id }}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 darkspace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                              {% if case.status == 'pending' %}Beklemede
+                              {% elif case.status == 'in_progress' %}İşlemde
+                              {% elif case.status == 'completed' %}Tamamlandı
+                              {% elif case.status == 'archived' %}Arşivlendi
+                              {% else %}{{ case.status }}{% endif %}">
+                            {{ case.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 darkspace-nowrap">
+                        <div class="text-sm text-gray-900">{{ case.doctor_name }}</div>
+                    </td>
+                    <td class="px-6 py-4 darkspace-nowrap text-sm text-gray-500">
+                        {{ case.created_at|date:"d.m.Y H:i" }}
+                    </td>
+                    <td class="px-6 py-4 darkspace-nowrap">
+                        <div class="text-sm text-gray-900">{{ case.image_count }}</div>
+                    </td>
+                    <td class="px-6 py-4 darkspace-nowrap">
+                        {% if case.last_prediction %}
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 rounded-full 
+                                     {% if case.last_prediction.confidence >= 0.9 %}bg-green-500
+                                     {% elif case.last_prediction.confidence >= 0.7 %}bg-blue-500
+                                     {% else %}bg-yellow-500{% endif %} mr-2"></div>
+                                <span class="text-sm text-gray-900">{{ case.last_prediction.predicted_class_display }}</span>
+                            </div>
+                        {% else %}
+                            <span class="text-sm text-gray-500">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 darkspace-nowrap text-right text-sm font-medium">
+                        <a href="{% url 'prediction:case_detail' case.id %}" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            Görüntüle
+                        </a>
+                        <a href="{% url 'prediction:image_upload' case.id %}" class="text-green-600 hover:text-green-900">
+                            Analiz Et
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-10 text-center text-gray-500">
+                        <p>Henüz vaka bulunamadı.</p>
+                        <a href="{% url 'prediction:case_create' %}" class="mt-2 inline-block text-primary hover:underline">
+                            Yeni vaka oluştur
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Sayfalama -->
+        {% if is_paginated %}
+        <div class="px-6 py-3 flex items-center justify-between border-t border-gray-200">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-dark hover:bg-gray-50">
+                        Önceki
+                    </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-dark hover:bg-gray-50">
+                        Sonraki
+                    </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Toplam <span class="font-medium">{{ page_obj.paginator.count }}</span> vaka,
+                        <span class="font-medium">{{ page_obj.start_index }}</span>
+                        -
+                        <span class="font-medium">{{ page_obj.end_index }}</span>
+                        arası görüntüleniyor
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-dark text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">İlk Sayfa</span>
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-dark text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Önceki</span>
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                        {% endif %}
+                        
+                        {% for i in page_obj.paginator.page_range %}
+                            {% if i > page_obj.number|add:"-3" and i < page_obj.number|add:"3" %}
+                                <a href="?page={{ i }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-dark text-sm font-medium {% if i == page_obj.number %}text-primary bg-purple-50 border-primary{% else %}text-gray-700 hover:bg-gray-50{% endif %}">
+                                    {{ i }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-dark text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Sonraki</span>
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            <a href="?page={{ page_obj.paginator.num_pages }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-dark text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Son Sayfa</span>
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusFilter = document.getElementById('status');
+        const searchFilter = document.getElementById('search');
+        const sortFilter = document.getElementById('sort');
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        
+        // URL parametrelerini al
+        const urlParams = new URLSearchParams(window.location.search);
+        const statusParam = urlParams.get('status');
+        const searchParam = urlParams.get('search');
+        const sortParam = urlParams.get('sort');
+        
+        // Filtreleri URL parametrelerine göre ayarla
+        if (statusParam) {
+            statusFilter.value = statusParam;
+        }
+        
+        if (searchParam) {
+            searchFilter.value = searchParam;
+        }
+        
+        if (sortParam) {
+            sortFilter.value = sortParam;
+        }
+        
+        // Filtre uygulama
+        applyFiltersBtn.addEventListener('click', function() {
+            const params = new URLSearchParams();
+            
+            if (statusFilter.value) {
+                params.append('status', statusFilter.value);
+            }
+            
+            if (searchFilter.value) {
+                params.append('search', searchFilter.value);
+            }
+            
+            if (sortFilter.value) {
+                params.append('sort', sortFilter.value);
+            }
+            
+            const queryString = params.toString();
+            window.location.href = window.location.pathname + (queryString ? '?' + queryString : '');
+        });
+    });
+</script>
+{% endblock %}
