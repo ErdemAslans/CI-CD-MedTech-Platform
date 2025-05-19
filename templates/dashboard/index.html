@@ -340,25 +340,38 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tahmin Dağılımı Grafiği
     const ctxDist = document.getElementById('predictionDistribution');
     if (ctxDist) {
+        // Veri noktalarını güvenli bir şekilde almak için
+        const predictionLabels = [];
+        const predictionData = [];
+        const predictionColors = [];
+        
+        // Django template'lerini JavaScript içinde kullanmak yerine
+        // Backend'den gelen verileri data-attributes ile almanız önerilir
+        // Aşağıdaki kod, data attribute'lerden veri okuyan örnek bir yaklaşımdır
+        
+        if (ctxDist.dataset.labels) {
+            predictionLabels.push(...JSON.parse(ctxDist.dataset.labels));
+        }
+        
+        if (ctxDist.dataset.values) {
+            predictionData.push(...JSON.parse(ctxDist.dataset.values));
+        }
+        
+        if (ctxDist.dataset.colors) {
+            predictionColors.push(...JSON.parse(ctxDist.dataset.colors));
+        }
+        
+        // Alternatif olarak, verileri doğrudan bir JavaScript değişkenine atayabilirsiniz
+        // Örnek:
+        // const predictionData = window.dashboardStats.predictionCounts || [];
+        
         new Chart(ctxDist, {
             type: 'doughnut',
             data: {
-                labels: [
-                    {% for dist in stats.prediction_distribution %}
-                        '{{ dist.display_name }}',
-                    {% endfor %}
-                ],
+                labels: predictionLabels,
                 datasets: [{
-                    data: [
-                        {% for dist in stats.prediction_distribution %}
-                            {{ dist.count }},
-                        {% endfor %}
-                    ],
-                    backgroundColor: [
-                        {% for dist in stats.prediction_distribution %}
-                            '{{ dist.color }}',
-                        {% endfor %}
-                    ],
+                    data: predictionData,
+                    backgroundColor: predictionColors,
                     borderWidth: 1
                 }]
             },
@@ -399,38 +412,53 @@ document.addEventListener('DOMContentLoaded', function() {
     // Zaman İçinde Tahminler Grafiği
     const ctxTime = document.getElementById('predictionsTimeline');
     if (ctxTime) {
-        // Örnek veri - Backend'den gerçek veriyi alabiliriz
-        const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran'];
+        // Örnek veri - Backend'den gerçek veriyi alabilirsiniz
+        const timelineData = {
+            months: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran'],
+            datasets: [
+                {
+                    label: 'Adenokarsinom',
+                    values: [12, 19, 13, 15, 20, 25],
+                    color: 'rgb(239, 68, 68)',
+                    bgColor: 'rgba(239, 68, 68, 0.1)'
+                },
+                {
+                    label: 'Skuamöz Karsinom',
+                    values: [7, 11, 9, 13, 16, 18],
+                    color: 'rgb(245, 158, 11)',
+                    bgColor: 'rgba(245, 158, 11, 0.1)'
+                },
+                {
+                    label: 'Normal Doku',
+                    values: [5, 8, 10, 9, 12, 14],
+                    color: 'rgb(16, 185, 129)',
+                    bgColor: 'rgba(16, 185, 129, 0.1)'
+                }
+            ]
+        };
+        
+        // Data attributes'den verileri de okuyabilirsiniz:
+        // if (ctxTime.dataset.timeline) {
+        //    timelineData = JSON.parse(ctxTime.dataset.timeline);
+        // }
+        
+        const datasets = timelineData.datasets.map(dataset => {
+            return {
+                label: dataset.label,
+                data: dataset.values,
+                borderColor: dataset.color,
+                backgroundColor: dataset.bgColor,
+                tension: 0.3,
+                fill: true,
+                pointRadius: 3
+            };
+        });
         
         new Chart(ctxTime, {
             type: 'line',
             data: {
-                labels: months,
-                datasets: [{
-                    label: 'Adenokarsinom',
-                    data: [12, 19, 13, 15, 20, 25],
-                    borderColor: 'rgb(239, 68, 68)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    tension: 0.3,
-                    fill: true,
-                    pointRadius: 3
-                }, {
-                    label: 'Skuamöz Karsinom',
-                    data: [7, 11, 9, 13, 16, 18],
-                    borderColor: 'rgb(245, 158, 11)',
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    tension: 0.3,
-                    fill: true,
-                    pointRadius: 3
-                }, {
-                    label: 'Normal Doku',
-                    data: [5, 8, 10, 9, 12, 14],
-                    borderColor: 'rgb(16, 185, 129)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    tension: 0.3,
-                    fill: true,
-                    pointRadius: 3
-                }]
+                labels: timelineData.months,
+                datasets: datasets
             },
             options: {
                 responsive: true,
@@ -481,9 +509,54 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 this.classList.remove('animate-spin');
                 // Burada verileri yenileme işlemi yapılabilir
-                window.location.reload();
-            }, 1000);
+                // AJAX kullanarak yenileme yapmak daha iyi bir yaklaşım olabilir
+                fetchDashboardData().then(() => {
+                    console.log('Veriler yenilendi');
+                }).catch(err => {
+                    console.error('Veri yenileme hatası:', err);
+                }).finally(() => {
+                    this.classList.remove('animate-spin');
+                });
+            }, 500);
         });
+    }
+    
+    // Verileri AJAX ile yenileme fonksiyonu örneği
+    function fetchDashboardData() {
+        return new Promise((resolve, reject) => {
+            fetch('/dashboard/api/stats/')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ağ yanıtı başarılı değil');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Verileri güncelle
+                    updateDashboardUI(data);
+                    resolve(data);
+                })
+                .catch(error => {
+                    console.error('Veri getirme hatası:', error);
+                    reject(error);
+                });
+        });
+    }
+    
+    // Dashboard UI güncelleme fonksiyonu
+    function updateDashboardUI(data) {
+        // İstatistik sayaçlarını güncelle
+        if (data.totalCases) {
+            document.getElementById('totalCases').textContent = data.totalCases;
+        }
+        
+        if (data.totalPredictions) {
+            document.getElementById('totalPredictions').textContent = data.totalPredictions;
+        }
+        
+        // Grafikleri güncelle...
+        // Not: Grafikleri güncellemek için mevcut chart instance'larına erişip
+        // data ve options güncelleyip update() çağırmanız gerekir
     }
 });
 </script>
