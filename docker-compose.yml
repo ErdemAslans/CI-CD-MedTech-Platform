@@ -1,5 +1,4 @@
-# docker-compose.yml
-version: '3.8'
+# docker-compose.yml (version satırını kaldırın)
 services:
   mongodb:
     image: mongo:5.0
@@ -22,7 +21,9 @@ services:
     volumes:
       - .:/app
       - ./ml/models:/app/ml/models
-      - ./media:/app/media  
+      - ./media:/app/media
+      - ./static:/app/static
+      - ./staticfiles:/app/staticfiles
     ports:
       - "8000:8000"
     env_file:
